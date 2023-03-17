@@ -1,0 +1,29 @@
+variable "ssh_host" {}
+variable "ssh_user" {}
+variable "ssh_key" {}
+resource "null_resource" "ssh_target" {
+	connection {
+		type	=	"ssh"
+		user	=	var.ssh_user
+		host	=	var.ssh_host
+		private_key = file(var.ssh_key)
+    }
+    provisioner "remote-exec" {
+	inline= [
+	 "sudo apt update  >/dev/null",
+	 "sudo apt install -qq -y php php-mysql php-curl php-gd php-intl php-json php-mbstring php-xml php-cas php-bz2 php-ldap php-imap mariadb-server apache2 libapache2-mod-php wget ",
+	 "sudo mariadb -e 'CREATE DATABASE GLPI;'",
+	 "sudo mariadb -e 'CREATE USER adminglpi@localhost IDENTIFIED BY \"li\";'",
+	 "sudo mariadb -e 'GRANT ALL PRIVILEGES ON *.* TO adminglpi@localhost WITH GRANT OPTION;'",
+	 "sudo mariadb -e 'FLUSH PRIVILEGES;'",
+	 "sudo echo '<Directory /var/www/html/glpi> \n OPTIONS Indexes FollowSymLinks \n AllowOverride ALL \n Require all granted \n <Directory>' >> /etc/apache2/sites-available/000-default.conf",
+      	 "sudo service apache2 restart >/dev/null",
+	 "sudo wget https://github.com/glpi-project/glpi/releases/download/10.0.5/glpi-10.0.5.tgz -P /tmp/ >/dev/null",
+	 "sudo tar -xvzf /tmp/glpi-10.0.5.tgz >/dev/null",
+	 "sudo rm /var/www/html/index.html",
+	 "sudo cp -r /tmp/glpi /var/www/html/ >/dev/null",
+	 "sudo chown -R www-data:www-data /var/www/html >/dev/null",
+	 "sudo chmod 775 /var/www/html/glpi >/dev/null"
+	 ]
+	}
+}
